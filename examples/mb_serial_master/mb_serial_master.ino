@@ -93,7 +93,7 @@ enum {
 
 // Enumeration of all supported CIDs for device (used in parameter definition table)
 // Note: CID must be unique for each characteristic and match to index in the table
-#if (0)
+#if (1)
 enum {
     CID_INP_DATA_0 = 0,
     CID_HOLD_DATA_0,
