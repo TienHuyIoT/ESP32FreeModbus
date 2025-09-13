@@ -1,0 +1,47 @@
+#pragma one
+#include "driver/uart.h"
+#include "sdkconfig.h"  // for modbus parameters structures
+
+#ifndef CONFIG_MB_COMM_MODE_ASCII
+#define CONFIG_MB_COMM_MODE_ASCII  0
+#endif
+
+#ifndef CONFIG_MB_COMM_MODE_RTU
+#define CONFIG_MB_COMM_MODE_RTU  1
+#endif
+
+#ifndef CONFIG_MB_UART_PORT_NUM
+#define CONFIG_MB_UART_PORT_NUM  (UART_NUM_MAX - 1)
+#endif
+
+#ifndef CONFIG_MB_UART_BAUD_RATE
+#define CONFIG_MB_UART_BAUD_RATE  9600
+#endif
+
+#ifndef CONFIG_MB_UART_TXD
+#define CONFIG_MB_UART_TXD  16
+#endif
+
+#ifndef CONFIG_MB_UART_RXD
+#define CONFIG_MB_UART_RXD  35
+#endif
+
+#ifndef CONFIG_MB_UART_RTS
+#define CONFIG_MB_UART_RTS  3
+#endif
+
+#ifndef CONFIG_FMB_MASTER_DELAY_MS_CONVERT
+#define CONFIG_FMB_MASTER_DELAY_MS_CONVERT  200
+#endif
+
+#ifndef CONFIG_FMB_MASTER_TIMEOUT_MS_RESPOND
+#define CONFIG_FMB_MASTER_TIMEOUT_MS_RESPOND  400
+#endif
+
+#ifndef CONFIG_FMB_TIMER_USE_ISR_DISPATCH_METHOD
+#define CONFIG_FMB_TIMER_USE_ISR_DISPATCH_METHOD  0
+#endif
+
+#ifndef CONFIG_FMB_EXT_TYPE_SUPPORT
+#define CONFIG_FMB_EXT_TYPE_SUPPORT  0
+#endif

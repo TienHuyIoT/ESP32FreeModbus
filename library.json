@@ -1,0 +1,16 @@
+{
+    "name": "ESP32FreeModbus",
+    "description": "ESP32 Free Modbus Library for Arduino",
+    "keywords": "esp32, modbus, arduino",
+    "version": "1.0.0",
+    "authors": {
+        "name": "Huynh Tien Huy",
+        "maintainer": true
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/TienHuyIoT/ESP32FreeModbus.git"
+    },
+    "frameworks": "arduino",
+    "platforms": "*"
+}
