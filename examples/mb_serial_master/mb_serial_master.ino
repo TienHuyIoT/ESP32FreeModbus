@@ -12,30 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/*
-| Type                  | Address Range | Size   | Access | Typical Use                   |
-| --------------------- | ------------- | ------ | ------ | ----------------------------- |
-| **Coils**             | 0xxxx         | 1 bit  | R/W    | Control outputs (relay, lamp) |
-| **Discrete Inputs**   | 1xxxx         | 1 bit  | Read   | Read status (switch, button)  |
-| **Input Registers**   | 3xxxx         | 16-bit | Read   | Sensor values (temp, voltage) |
-| **Holding Registers** | 4xxxx         | 16-bit | R/W    | Config & data storage         |
-
-const mb_parameter_descriptor_t device_parameters[] = {
-//  { CID               , Param Name            , Units         , Slave Addr        , Modbus Reg Type   , Reg Start, Reg Size, Instance Offset          , Data Type         , Data Size, Parameter Options  , Access Mode}
-    { CID_INP_DATA_0    , STR("Data_channel_0") , STR("Volts")  , MB_DEVICE_ADDR1   , MB_PARAM_INPUT    , 0     , 2     , INPUT_OFFSET(input_data0)     , PARAM_TYPE_FLOAT  , 4     , OPTS( -10, 10, 1 )    , PAR_PERMS_READ_WRITE_TRIGGER },
-    { CID_HOLD_DATA_0   , STR("Humidity_1")     , STR("%rH")    , MB_DEVICE_ADDR1   , MB_PARAM_HOLDING  , 0     , 2     , HOLD_OFFSET(holding_data0)    , PARAM_TYPE_FLOAT  , 4     , OPTS( 0, 100, 1 )     , PAR_PERMS_READ_WRITE_TRIGGER },
-    { CID_INP_DATA_1    , STR("Temperature_1")  , STR("C")      , MB_DEVICE_ADDR1   , MB_PARAM_INPUT    , 2     , 2     , INPUT_OFFSET(input_data1)     , PARAM_TYPE_FLOAT  , 4     , OPTS( -40, 100, 1 )   , PAR_PERMS_READ_WRITE_TRIGGER },
-    { CID_HOLD_DATA_1   , STR("Humidity_2")     , STR("%rH")    , MB_DEVICE_ADDR1   , MB_PARAM_HOLDING  , 2     , 2     , HOLD_OFFSET(holding_data1)    , PARAM_TYPE_FLOAT  , 4     , OPTS( 0, 100, 1 )     , PAR_PERMS_READ_WRITE_TRIGGER },
-    { CID_INP_DATA_2    , STR("Temperature_2")  , STR("C")      , MB_DEVICE_ADDR1   , MB_PARAM_INPUT    , 4     , 2     , INPUT_OFFSET(input_data2)     , PARAM_TYPE_FLOAT  , 4     , OPTS( -40, 100, 1 )   , PAR_PERMS_READ_WRITE_TRIGGER },
-    { CID_HOLD_DATA_2   , STR("Humidity_3")     , STR("%rH")    , MB_DEVICE_ADDR1   , MB_PARAM_HOLDING  , 4     , 2     , HOLD_OFFSET(holding_data2)    , PARAM_TYPE_FLOAT  , 4     , OPTS( 0, 100, 1 )     , PAR_PERMS_READ_WRITE_TRIGGER },
-    { CID_HOLD_TEST_REG , STR("Test_regs")      , STR("__")     , MB_DEVICE_ADDR1   , MB_PARAM_HOLDING  , 10    , 58    , HOLD_OFFSET(test_regs)        , PARAM_TYPE_ASCII  , 116   , OPTS( 0, 100, 1 )     , PAR_PERMS_READ_WRITE_TRIGGER },
-    { CID_RELAY_P1      , STR("RelayP1")        , STR("on/off") , MB_DEVICE_ADDR1   , MB_PARAM_COIL     , 0     , 8     , COIL_OFFSET(coils_port0)      , PARAM_TYPE_U16    , 2     , OPTS( BIT1, 0, 0 )    , PAR_PERMS_READ_WRITE_TRIGGER },
-    { CID_RELAY_P2      , STR("RelayP2")        , STR("on/off") , MB_DEVICE_ADDR1   , MB_PARAM_COIL     , 8     , 8     , COIL_OFFSET(coils_port1)      , PARAM_TYPE_U16    , 2     , OPTS( BIT0, 0, 0 )    , PAR_PERMS_READ_WRITE_TRIGGER }
-};
-*/
-
 #include <Arduino.h>
-#include <assert.h>
 #include "string.h"
 #include "esp_log.h"
 #include "modbus_params.h"  // for modbus parameters structures
@@ -53,7 +30,7 @@ const mb_parameter_descriptor_t device_parameters[] = {
 #define MASTER_MAX_CIDS num_device_parameters
 
 // Number of reading of parameters from slave
-#define MASTER_MAX_RETRY 30
+#define MASTER_MAX_RETRY 2
 
 // Timeout to update cid over Modbus
 #define UPDATE_CIDS_TIMEOUT_MS          (500)
@@ -81,6 +58,34 @@ const mb_parameter_descriptor_t device_parameters[] = {
 
 static const char *TAG = "MASTER_TEST";
 
+/*
+| Type                  | Address Range | Size   | Access | Typical Use                   |
+| --------------------- | ------------- | ------ | ------ | ----------------------------- |
+| **Coils**             | 0xxxx         | 1 bit  | R/W    | Control outputs (relay, lamp) |
+| **Discrete Inputs**   | 1xxxx         | 1 bit  | Read   | Read status (switch, button)  |
+| **Input Registers**   | 3xxxx         | 16-bit | Read   | Sensor values (temp, voltage) |
+| **Holding Registers** | 4xxxx         | 16-bit | R/W    | Config & data storage         |
+
+Example Data (Object) Dictionary for Modbus parameters:
+The CID field in the table must be unique.
+Modbus Slave Addr field defines slave address of the device with correspond parameter.
+Modbus Reg Type - Type of Modbus register area (Holding register, Input Register and such).
+Reg Start field defines the start Modbus register number and Reg Size defines the number of registers for the characteristic accordingly.
+The Instance Offset defines offset in the appropriate parameter structure that will be used as instance to save parameter value.
+Data Type, Data Size specify type of the characteristic and its data size.
+Parameter Options field specifies the options that can be used to process parameter value (limits or masks).
+Access Mode - can be used to implement custom options for processing of characteristic (Read/Write restrictions, factory mode values and etc).
+{ CID, Param Name, Units, Modbus Slave Addr, Modbus Reg Type, Reg Start, Reg Size, Instance Offset, Data Type, Data Size, Parameter Options, Access Mode}
+
+* Fix structure types to be used in the example
+\Arduino\hardware\espressif\esp32\tools\sdk\esp32\include\freemodbus\freemodbus\common\include\esp_modbus_master.h
+typedef struct {
+    ...
+    size_t              param_size;        // Number of bytes in the parameter.
+    ...
+} mb_parameter_descriptor_t;
+*/
+
 // Enumeration of modbus device addresses accessed by master device
 enum {
     MB_DEVICE_ADDR1 = 51 // Only one slave device used for the test (add other slave addresses here)
@@ -88,28 +93,50 @@ enum {
 
 // Enumeration of all supported CIDs for device (used in parameter definition table)
 // Note: CID must be unique for each characteristic and match to index in the table
+#if (0)
+enum {
+    CID_INP_DATA_0 = 0,
+    CID_HOLD_DATA_0,
+    CID_INP_DATA_1,
+    CID_HOLD_DATA_1,
+    CID_INP_DATA_2,
+    CID_HOLD_DATA_2,
+    CID_HOLD_TEST_REG,
+    CID_RELAY_P1,
+    CID_RELAY_P2,
+    CID_COUNT
+};
+
+const mb_parameter_descriptor_t device_parameters[] = {
+//  { CID               , Param Name            , Units         , Slave Addr        , Modbus Reg Type   , Reg Start, Reg Size, Instance Offset          , Data Type         , Data Size, Parameter Options  , Access Mode                  }
+    { CID_INP_DATA_0    , STR("Data_channel_0") , STR("Volts")  , MB_DEVICE_ADDR1   , MB_PARAM_INPUT    , 0     , 2     , INPUT_OFFSET(input_data0)     , PARAM_TYPE_FLOAT  , 4     , OPTS( -10, 10, 1 )    , PAR_PERMS_READ_WRITE_TRIGGER },
+    { CID_HOLD_DATA_0   , STR("Humidity_1")     , STR("%rH")    , MB_DEVICE_ADDR1   , MB_PARAM_HOLDING  , 0     , 2     , HOLD_OFFSET(holding_data0)    , PARAM_TYPE_FLOAT  , 4     , OPTS( 0, 100, 1 )     , PAR_PERMS_READ_WRITE_TRIGGER },
+    { CID_INP_DATA_1    , STR("Temperature_1")  , STR("C")      , MB_DEVICE_ADDR1   , MB_PARAM_INPUT    , 2     , 2     , INPUT_OFFSET(input_data1)     , PARAM_TYPE_FLOAT  , 4     , OPTS( -40, 100, 1 )   , PAR_PERMS_READ_WRITE_TRIGGER },
+    { CID_HOLD_DATA_1   , STR("Humidity_2")     , STR("%rH")    , MB_DEVICE_ADDR1   , MB_PARAM_HOLDING  , 2     , 2     , HOLD_OFFSET(holding_data1)    , PARAM_TYPE_FLOAT  , 4     , OPTS( 0, 100, 1 )     , PAR_PERMS_READ_WRITE_TRIGGER },
+    { CID_INP_DATA_2    , STR("Temperature_2")  , STR("C")      , MB_DEVICE_ADDR1   , MB_PARAM_INPUT    , 4     , 2     , INPUT_OFFSET(input_data2)     , PARAM_TYPE_FLOAT  , 4     , OPTS( -40, 100, 1 )   , PAR_PERMS_READ_WRITE_TRIGGER },
+    { CID_HOLD_DATA_2   , STR("Humidity_3")     , STR("%rH")    , MB_DEVICE_ADDR1   , MB_PARAM_HOLDING  , 4     , 2     , HOLD_OFFSET(holding_data2)    , PARAM_TYPE_FLOAT  , 4     , OPTS( 0, 100, 1 )     , PAR_PERMS_READ_WRITE_TRIGGER },
+    { CID_HOLD_TEST_REG , STR("Test_regs")      , STR("__")     , MB_DEVICE_ADDR1   , MB_PARAM_HOLDING  , 10    , 58    , HOLD_OFFSET(test_regs)        , PARAM_TYPE_ASCII  , 116   , OPTS( 0, 100, 1 )     , PAR_PERMS_READ_WRITE_TRIGGER },
+    { CID_RELAY_P1      , STR("RelayP1")        , STR("on/off") , MB_DEVICE_ADDR1   , MB_PARAM_COIL     , 0     , 8     , COIL_OFFSET(coils_port0)      , PARAM_TYPE_U16    , 2     , OPTS( BIT1, 0, 0 )    , PAR_PERMS_READ_WRITE_TRIGGER },
+    { CID_RELAY_P2      , STR("RelayP2")        , STR("on/off") , MB_DEVICE_ADDR1   , MB_PARAM_COIL     , 8     , 8     , COIL_OFFSET(coils_port1)      , PARAM_TYPE_U16    , 2     , OPTS( BIT0, 0, 0 )    , PAR_PERMS_READ_WRITE_TRIGGER }
+};
+#else
+/*
+Customize Example Data (Object) Dictionary for Modbus parameters:
+The CID field in the table must be unique.
+*/
 enum {
     CID_HOLD_DATA_0 = 0,
     CID_HOLD_TEST_REG = 1,
     CID_COUNT
 };
 
-// Example Data (Object) Dictionary for Modbus parameters:
-// The CID field in the table must be unique.
-// Modbus Slave Addr field defines slave address of the device with correspond parameter.
-// Modbus Reg Type - Type of Modbus register area (Holding register, Input Register and such).
-// Reg Start field defines the start Modbus register number and Reg Size defines the number of registers for the characteristic accordingly.
-// The Instance Offset defines offset in the appropriate parameter structure that will be used as instance to save parameter value.
-// Data Type, Data Size specify type of the characteristic and its data size.
-// Parameter Options field specifies the options that can be used to process parameter value (limits or masks).
-// Access Mode - can be used to implement custom options for processing of characteristic (Read/Write restrictions, factory mode values and etc).
-// { CID, Param Name, Units, Modbus Slave Addr, Modbus Reg Type, Reg Start, Reg Size, Instance Offset, Data Type, Data Size, Parameter Options, Access Mode}
 const mb_parameter_descriptor_t device_parameters[] = {
     { CID_HOLD_DATA_0, STR("Data_channel_0"), STR("Volts"), MB_DEVICE_ADDR1, MB_PARAM_HOLDING, TEST_HOLD_REG_START(holding_data0), TEST_HOLD_REG_SIZE(holding_data0),
                     HOLD_OFFSET(holding_data0), PARAM_TYPE_FLOAT, 4, OPTS( -10, 10000, 1 ), PAR_PERMS_READ_WRITE_TRIGGER },
     { CID_HOLD_TEST_REG, STR("Test_regs"), STR("__"), MB_DEVICE_ADDR1, MB_PARAM_HOLDING, TEST_HOLD_REG_START(test_regs), TEST_ARR_REG_SZ,
             HOLD_OFFSET(test_regs), PARAM_TYPE_ASCII, (TEST_ARR_REG_SZ * 2), OPTS( 0, 100, 1 ), PAR_PERMS_READ_WRITE_TRIGGER }
 };
+#endif
 
 // Calculate number of parameters in the table
 const uint16_t num_device_parameters = (sizeof(device_parameters)/sizeof(device_parameters[0]));
